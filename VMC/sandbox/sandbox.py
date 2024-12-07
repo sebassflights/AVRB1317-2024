@@ -33,8 +33,18 @@ class Sandbox(MQTTModule):
         # we're creating a dictionary of MQTT topics, and the methods we want to run
         # whenever a message arrives on that topic.
         self.topic_map = {"avr/fcm/velocity": self.show_velocity
-                         "avr/thermal/reading": 
+                         "avr/thermal/reading": self.thermal_led
                          }
+        def thermal_led(self, payload: AvrThermalReadingPayload):
+        threshold = 22
+
+        data = payload["data"]
+        base64_decoded = data.encode("utf-8")
+        as_bytes = base64.b64decode(base64_decoded)
+        pixel_ints = list(bytearray(as_bytes))
+
+        if sum(pixel_ints) / len(pixel_ints) > threshold:
+            self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255,255,255,255), time=0.5))
 
     # Here's an example of a custom message handler here.
     # This is what executes whenever a message is received on the "avr/fcm/velocity"
